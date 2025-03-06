@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './TableEditor.css';
 
 interface Cell {
@@ -6,6 +7,8 @@ interface Cell {
   colspan?: number;
   rowspan?: number;
   isEditing?: boolean;
+  backgroundColor?: string;
+  color?: string;
 }
 
 interface TableData {
@@ -147,7 +150,12 @@ export const TableEditor: React.FC = () => {
     setTableData(prev => {
       const newRows = [...prev.rows];
       const maxCols = Math.max(...prev.rows.map(row => row.length)) || 1;
-      const newRow = Array(maxCols).fill({ content: '', backgroundColor: '#ffffff', color: '#000000' });
+      // Create a new row with unique cell objects
+      const newRow = Array.from({ length: maxCols }, () => ({ 
+        content: '', 
+        backgroundColor: '#ffffff', 
+        color: '#000000' 
+      }));
       newRows.splice(position === 'before' ? targetRow : targetRow + 1, 0, newRow);
       return {
         rows: newRows
@@ -318,10 +326,10 @@ export const TableEditor: React.FC = () => {
     <div className="table-editor">
       <div className="toolbar">
         <div className="toolbar-group">
-          <button className="toolbar-button" onClick={addRow} title="Add Row">
+          <button className="toolbar-button" onClick={() => addRow()} title="Add Row">
             <span className="material-icons">add_row_below</span>
           </button>
-          <button className="toolbar-button" onClick={addColumn} title="Add Column">
+          <button className="toolbar-button" onClick={() => addColumn()} title="Add Column">
             <span className="material-icons">add_column</span>
           </button>
         </div>
@@ -329,7 +337,7 @@ export const TableEditor: React.FC = () => {
           <button className="toolbar-button" onClick={() => setShowImport(true)} title="Import HTML">
             <span className="material-icons">upload_file</span>
           </button>
-          <button className="toolbar-button" onClick={handleExport} title="Export HTML">
+          <button className="toolbar-button" onClick={() => handleExport()} title="Export HTML">
             <span className="material-icons">download</span>
           </button>
         </div>
