@@ -1,0 +1,215 @@
+/* Google Fonts - Material Icons */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+.table-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f8f9fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+/* Toolbar Styles */
+.toolbar {
+  display: flex;
+  gap: 16px;
+  padding: 8px 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.toolbar-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: #5f6368;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toolbar-button:hover {
+  background-color: #f1f3f4;
+  color: #1a73e8;
+}
+
+.toolbar-button .material-icons {
+  font-size: 20px;
+}
+
+/* Table Container */
+.table-container {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  background: #fff;
+}
+
+/* Table Styles */
+.sheet-table {
+  border-collapse: collapse;
+  width: 100%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sheet-cell {
+  position: relative;
+  border: 1px solid #e0e0e0;
+  padding: 8px;
+  min-width: 100px;
+  height: 32px;
+  font-size: 14px;
+  color: #202124;
+  transition: all 0.2s;
+}
+
+.sheet-cell:hover {
+  background-color: #f8f9fa;
+}
+
+.sheet-cell.active {
+  border: 2px solid #1a73e8;
+  padding: 7px;
+}
+
+.cell-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+  font-family: inherit;
+  background: transparent;
+  outline: none;
+}
+
+.cell-content {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Cell Controls */
+.cell-controls {
+  position: absolute;
+  bottom: -24px;
+  left: 0;
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.span-input {
+  width: 40px;
+  padding: 2px 4px;
+  border: 1px solid #e0e0e0;
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal h2 {
+  margin: 0 0 16px;
+  color: #202124;
+  font-size: 20px;
+}
+
+.modal textarea {
+  width: 100%;
+  height: 200px;
+  padding: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-family: monospace;
+  margin-bottom: 16px;
+  resize: vertical;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.modal-buttons button:first-child {
+  background: #f1f3f4;
+  color: #5f6368;
+}
+
+.modal-buttons button:last-child {
+  background: #1a73e8;
+  color: white;
+}
+
+/* Export Notification */
+.export-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 24px;
+  background: #323232;
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+  animation: slideIn 0.3s ease-out, slideOut 0.3s ease-in 1.7s;
+  z-index: 1000;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(100%); opacity: 0; }
+}
