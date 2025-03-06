@@ -6,8 +6,6 @@ interface Cell {
   colspan?: number;
   rowspan?: number;
   isEditing?: boolean;
-  backgroundColor?: string;
-  color?: string;
 }
 
 interface TableData {
@@ -112,8 +110,8 @@ export const TableEditor: React.FC = () => {
       rows: prev.rows.map((row, i) =>
         i === rowIndex
           ? row.map((cell, j) =>
-              j === cellIndex ? { ...cell, content: value } : cell
-            )
+            j === cellIndex ? { ...cell, content: value } : cell
+          )
           : row
       )
     }));
@@ -149,16 +147,12 @@ export const TableEditor: React.FC = () => {
     setTableData(prev => {
       const newRows = [...prev.rows];
       const maxCols = Math.max(...prev.rows.map(row => row.length)) || 1;
-      const newRow = Array(maxCols).fill(null).map(() => ({
-        content: '',
-        backgroundColor: '#ffffff',
-        color: '#000000'
-      }));
-      const insertIndex = position === 'before' ? targetRow : targetRow + 1;
-      newRows.splice(insertIndex, 0, newRow);
-      return { rows: newRows };
+      const newRow = Array(maxCols).fill({ content: '', backgroundColor: '#ffffff', color: '#000000' });
+      newRows.splice(position === 'before' ? targetRow : targetRow + 1, 0, newRow);
+      return {
+        rows: newRows
+      };
     });
-    setActiveCell(null);
   };
 
   const addColumn = (position: 'before' | 'after' = 'after', targetCol: number = -1) => {
@@ -166,16 +160,13 @@ export const TableEditor: React.FC = () => {
       const newRows = prev.rows.map(row => {
         const newRow = [...row];
         const insertIndex = targetCol === -1 ? row.length : (position === 'before' ? targetCol : targetCol + 1);
-        newRow.splice(insertIndex, 0, {
-          content: '',
-          backgroundColor: '#ffffff',
-          color: '#000000'
-        });
+        newRow.splice(insertIndex, 0, { content: '', backgroundColor: '#ffffff', color: '#000000' });
         return newRow;
       });
-      return { rows: newRows };
+      return {
+        rows: newRows
+      };
     });
-    setActiveCell(null);
   };
 
   const handleImport = () => {
@@ -201,9 +192,6 @@ export const TableEditor: React.FC = () => {
 
   const handleContextMenu = (e: React.MouseEvent, rowIndex: number, cellIndex: number) => {
     e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
     setContextMenu({
       show: true,
       x: e.clientX,
@@ -211,7 +199,6 @@ export const TableEditor: React.FC = () => {
       row: rowIndex,
       col: cellIndex
     });
-    setActiveCell({ row: rowIndex, col: cellIndex });
   };
 
   const handleColorChange = (color: string, type: 'text' | 'background') => {
@@ -224,34 +211,101 @@ export const TableEditor: React.FC = () => {
       rows: prev.rows.map((row, i) =>
         i === activeCell.row
           ? row.map((cell, j) =>
-              j === activeCell.col
-                ? {
-                    ...cell,
-                    ...(type === 'text' ? { color } : { backgroundColor: color })
-                  }
-                : cell
-            )
+            j === activeCell.col
+              ? {
+                ...cell,
+                ...(type === 'text' ? { color } : { backgroundColor: color })
+              }
+              : cell
+          )
           : row
       )
     }));
   };
 
   const deleteRow = (rowIndex: number) => {
-    if (tableData.rows.length <= 1) return; // Prevent deleting the last row
     setTableData(prev => ({
       rows: prev.rows.filter((_, index) => index !== rowIndex)
     }));
-    setActiveCell(null);
-    setContextMenu(prev => ({ ...prev, show: false }));
   };
 
   const deleteColumn = (colIndex: number) => {
-    if (tableData.rows[0]?.length <= 1) return; // Prevent deleting the last column
     setTableData(prev => ({
       rows: prev.rows.map(row => row.filter((_, index) => index !== colIndex))
     }));
-    setActiveCell(null);
-    setContextMenu(prev => ({ ...prev, show: false }));
+  };
+
+  const addCellRight = (rowIndex: number, colIndex: number) => {
+    console.log('Adding cell right at:', rowIndex, colIndex);
+    setTableData(prev => {
+      const newRows = JSON.parse(JSON.stringify(prev.rows)); // Deep clone to avoid reference issues
+      // Insert a new cell to the right of the current cell
+      newRows[rowIndex].splice(colIndex + 1, 0, { 
+        content: '', 
+        backgroundColor: '#ffffff', 
+        color: '#000000' 
+      });
+      console.log('New row after adding cell right:', newRows[rowIndex]);
+      return { rows: newRows };
+    });
+  };
+
+  const addCellLeft = (rowIndex: number, colIndex: number) => {
+    console.log('Adding cell left at:', rowIndex, colIndex);
+    setTableData(prev => {
+      const newRows = JSON.parse(JSON.stringify(prev.rows)); // Deep clone to avoid reference issues
+      // Insert a new cell to the left of the current cell
+      newRows[rowIndex].splice(colIndex, 0, { 
+        content: '', 
+        backgroundColor: '#ffffff', 
+        color: '#000000' 
+      });
+      console.log('New row after adding cell left:', newRows[rowIndex]);
+      return { rows: newRows };
+    });
+  };
+
+  const addCellBelow = (rowIndex: number, colIndex: number) => {
+    console.log('Adding cell below at:', rowIndex, colIndex);
+    setTableData(prev => {
+      // Deep clone to avoid reference issues
+      const newRows = JSON.parse(JSON.stringify(prev.rows));
+      console.log('Before modification:', newRows);
+      
+      // If we're at the last row, add a new row
+      if (rowIndex === newRows.length - 1) {
+        // Create a new row with unique cell objects
+        const newRow = [];
+        for (let i = 0; i < newRows[rowIndex].length; i++) {
+          newRow.push({
+            content: '',
+            backgroundColor: '#ffffff',
+            color: '#000000'
+          });
+        }
+        console.log('New row created:', newRow);
+        newRows.push(newRow);
+      } else {
+        // Otherwise, insert a new cell in the row below at the same column position
+        // First, ensure the row below has enough cells
+        while (newRows[rowIndex + 1].length <= colIndex) {
+          newRows[rowIndex + 1].push({ 
+            content: '', 
+            backgroundColor: '#ffffff', 
+            color: '#000000' 
+          });
+        }
+        // Shift cells to the right to make room for the new cell
+        newRows[rowIndex + 1].splice(colIndex, 0, { 
+          content: '', 
+          backgroundColor: '#ffffff', 
+          color: '#000000' 
+        });
+        console.log('Modified row below:', newRows[rowIndex + 1]);
+      }
+      console.log('After modification:', newRows);
+      return { rows: newRows };
+    });
   };
 
   useEffect(() => {
@@ -264,18 +318,10 @@ export const TableEditor: React.FC = () => {
     <div className="table-editor">
       <div className="toolbar">
         <div className="toolbar-group">
-          <button 
-            className="toolbar-button" 
-            onClick={() => addRow('after', tableData.rows.length - 1)} 
-            title="Add Row"
-          >
+          <button className="toolbar-button" onClick={addRow} title="Add Row">
             <span className="material-icons">add_row_below</span>
           </button>
-          <button 
-            className="toolbar-button" 
-            onClick={() => addColumn('after', tableData.rows[0]?.length - 1)} 
-            title="Add Column"
-          >
+          <button className="toolbar-button" onClick={addColumn} title="Add Column">
             <span className="material-icons">add_column</span>
           </button>
         </div>
@@ -291,86 +337,86 @@ export const TableEditor: React.FC = () => {
 
       <div className="editor-layout">
         <div className="table-container">
-        <table className="sheet-table">
-          <tbody>
-            {tableData.rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {row.map((cell, cellIndex) => (
-                  <td
-                    key={cellIndex}
-                    className={`sheet-cell ${activeCell?.row === rowIndex && activeCell?.col === cellIndex ? 'active' : ''}`}
-                    onClick={() => handleCellClick(rowIndex, cellIndex)}
-                    onContextMenu={(e) => handleContextMenu(e, rowIndex, cellIndex)}
-                    colSpan={cell.colspan}
-                    rowSpan={cell.rowspan}
-                    style={{
-                      backgroundColor: cell.backgroundColor || '#ffffff',
-                      color: cell.color || '#000000'
-                    }}
-                  >
-                    {activeCell?.row === rowIndex && activeCell?.col === cellIndex ? (
-                      <input
-                        ref={editInputRef}
-                        type="text"
-                        value={cell.content}
-                        onChange={(e) => handleCellChange(rowIndex, cellIndex, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, rowIndex, cellIndex)}
-                        onBlur={() => setActiveCell(null)}
-                        className="cell-input"
-                      />
-                    ) : (
-                      <span className="cell-content">{cell.content}</span>
-                    )}
-                    {activeCell?.row === rowIndex && activeCell?.col === cellIndex && (
-                      <div className="cell-controls">
+          <table className="sheet-table">
+            <tbody>
+              {tableData.rows.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  {row.map((cell, cellIndex) => (
+                    <td
+                      key={cellIndex}
+                      className={`sheet-cell ${activeCell?.row === rowIndex && activeCell?.col === cellIndex ? 'active' : ''}`}
+                      onClick={() => handleCellClick(rowIndex, cellIndex)}
+                      onContextMenu={(e) => handleContextMenu(e, rowIndex, cellIndex)}
+                      colSpan={cell.colspan}
+                      rowSpan={cell.rowspan}
+                      style={{
+                        backgroundColor: cell.backgroundColor || '#ffffff',
+                        color: cell.color || '#000000'
+                      }}
+                    >
+                      {activeCell?.row === rowIndex && activeCell?.col === cellIndex ? (
                         <input
-                          type="number"
-                          min="1"
-                          value={cell.colspan || 1}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value) || undefined;
-                            setTableData(prev => ({
-                              rows: prev.rows.map((r, i) =>
-                                i === rowIndex
-                                  ? r.map((c, j) =>
+                          ref={editInputRef}
+                          type="text"
+                          value={cell.content}
+                          onChange={(e) => handleCellChange(rowIndex, cellIndex, e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, rowIndex, cellIndex)}
+                          onBlur={() => setActiveCell(null)}
+                          className="cell-input"
+                        />
+                      ) : (
+                        <span className="cell-content">{cell.content}</span>
+                      )}
+                      {activeCell?.row === rowIndex && activeCell?.col === cellIndex && (
+                        <div className="cell-controls">
+                          <input
+                            type="number"
+                            min="1"
+                            value={cell.colspan || 1}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || undefined;
+                              setTableData(prev => ({
+                                rows: prev.rows.map((r, i) =>
+                                  i === rowIndex
+                                    ? r.map((c, j) =>
                                       j === cellIndex ? { ...c, colspan: value } : c
                                     )
-                                  : r
-                              )
-                            }));
-                          }}
-                          className="span-input"
-                          title="Colspan"
-                        />
-                        <input
-                          type="number"
-                          min="1"
-                          value={cell.rowspan || 1}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value) || undefined;
-                            setTableData(prev => ({
-                              rows: prev.rows.map((r, i) =>
-                                i === rowIndex
-                                  ? r.map((c, j) =>
+                                    : r
+                                )
+                              }));
+                            }}
+                            className="span-input"
+                            title="Colspan"
+                          />
+                          <input
+                            type="number"
+                            min="1"
+                            value={cell.rowspan || 1}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || undefined;
+                              setTableData(prev => ({
+                                rows: prev.rows.map((r, i) =>
+                                  i === rowIndex
+                                    ? r.map((c, j) =>
                                       j === cellIndex ? { ...c, rowspan: value } : c
                                     )
-                                  : r
-                              )
-                            }));
-                          }}
-                          className="span-input"
-                          title="Rowspan"
-                        />
-                      </div>
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                                    : r
+                                )
+                              }));
+                            }}
+                            className="span-input"
+                            title="Rowspan"
+                          />
+                        </div>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        
+
         {activeCell && (
           <div className="side-panel">
             <div className="panel-section">
@@ -404,6 +450,11 @@ export const TableEditor: React.FC = () => {
                 <button onClick={() => deleteRow(activeCell.row)} className="danger">Delete Row</button>
                 <button onClick={() => deleteColumn(activeCell.col)} className="danger">Delete Column</button>
               </div>
+              <div className="operation-buttons">
+                <button onClick={() => addCellRight(activeCell.row, activeCell.col)}>Add Cell Right</button>
+                <button onClick={() => addCellLeft(activeCell.row, activeCell.col)}>Add Cell Left</button>
+                <button onClick={() => addCellBelow(activeCell.row, activeCell.col)}>Add Cell Below</button>
+              </div>
             </div>
           </div>
         )}
@@ -418,6 +469,10 @@ export const TableEditor: React.FC = () => {
           <button onClick={() => addRow('after', contextMenu.row)}>Add Row Below</button>
           <button onClick={() => addColumn('before', contextMenu.col)}>Add Column Left</button>
           <button onClick={() => addColumn('after', contextMenu.col)}>Add Column Right</button>
+          <div className="context-menu-separator" />
+          <button onClick={() => addCellRight(contextMenu.row, contextMenu.col)}>Add Cell Right</button>
+          <button onClick={() => addCellLeft(contextMenu.row, contextMenu.col)}>Add Cell Left</button>
+          <button onClick={() => addCellBelow(contextMenu.row, contextMenu.col)}>Add Cell Below</button>
           <div className="context-menu-separator" />
           <button onClick={() => deleteRow(contextMenu.row)} className="danger">Delete Row</button>
           <button onClick={() => deleteColumn(contextMenu.col)} className="danger">Delete Column</button>
