@@ -6,6 +6,8 @@ interface Cell {
   colspan?: number;
   rowspan?: number;
   isEditing?: boolean;
+  backgroundColor?: string;
+  color?: string;
 }
 
 interface TableData {
@@ -40,11 +42,22 @@ const defaultTable = `<table>
   </tr>
 </table>`;
 
+interface ContextMenu {
+  show: boolean;
+  x: number;
+  y: number;
+  row: number;
+  col: number;
+}
+
 export const TableEditor: React.FC = () => {
   const [tableData, setTableData] = useState<TableData>({ rows: [] });
   const [activeCell, setActiveCell] = useState<{ row: number; col: number } | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [inputHtml, setInputHtml] = useState(defaultTable);
+  const [contextMenu, setContextMenu] = useState<ContextMenu>({ show: false, x: 0, y: 0, row: 0, col: 0 });
+  const [selectedColor, setSelectedColor] = useState('#000000');
+  const [selectedBgColor, setSelectedBgColor] = useState('#ffffff');
   const editInputRef = useRef<HTMLInputElement>(null);
 
   const parseHtmlTable = (html: string) => {
@@ -132,17 +145,37 @@ export const TableEditor: React.FC = () => {
     }
   };
 
-  const addRow = () => {
-    const maxCols = Math.max(...tableData.rows.map(row => row.length)) || 1;
-    setTableData(prev => ({
-      rows: [...prev.rows, Array(maxCols).fill({ content: '' })]
-    }));
+  const addRow = (position: 'before' | 'after' = 'after', targetRow: number = tableData.rows.length) => {
+    setTableData(prev => {
+      const newRows = [...prev.rows];
+      const maxCols = Math.max(...prev.rows.map(row => row.length)) || 1;
+      const newRow = Array(maxCols).fill(null).map(() => ({
+        content: '',
+        backgroundColor: '#ffffff',
+        color: '#000000'
+      }));
+      const insertIndex = position === 'before' ? targetRow : targetRow + 1;
+      newRows.splice(insertIndex, 0, newRow);
+      return { rows: newRows };
+    });
+    setActiveCell(null);
   };
 
-  const addColumn = () => {
-    setTableData(prev => ({
-      rows: prev.rows.map(row => [...row, { content: '' }])
-    }));
+  const addColumn = (position: 'before' | 'after' = 'after', targetCol: number = -1) => {
+    setTableData(prev => {
+      const newRows = prev.rows.map(row => {
+        const newRow = [...row];
+        const insertIndex = targetCol === -1 ? row.length : (position === 'before' ? targetCol : targetCol + 1);
+        newRow.splice(insertIndex, 0, {
+          content: '',
+          backgroundColor: '#ffffff',
+          color: '#000000'
+        });
+        return newRow;
+      });
+      return { rows: newRows };
+    });
+    setActiveCell(null);
   };
 
   const handleImport = () => {
@@ -166,14 +199,83 @@ export const TableEditor: React.FC = () => {
     setTableData(parsed);
   }, []);
 
+  const handleContextMenu = (e: React.MouseEvent, rowIndex: number, cellIndex: number) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setContextMenu({
+      show: true,
+      x: e.clientX,
+      y: e.clientY,
+      row: rowIndex,
+      col: cellIndex
+    });
+    setActiveCell({ row: rowIndex, col: cellIndex });
+  };
+
+  const handleColorChange = (color: string, type: 'text' | 'background') => {
+    if (!activeCell) return;
+
+    if (type === 'text') setSelectedColor(color);
+    else setSelectedBgColor(color);
+
+    setTableData(prev => ({
+      rows: prev.rows.map((row, i) =>
+        i === activeCell.row
+          ? row.map((cell, j) =>
+              j === activeCell.col
+                ? {
+                    ...cell,
+                    ...(type === 'text' ? { color } : { backgroundColor: color })
+                  }
+                : cell
+            )
+          : row
+      )
+    }));
+  };
+
+  const deleteRow = (rowIndex: number) => {
+    if (tableData.rows.length <= 1) return; // Prevent deleting the last row
+    setTableData(prev => ({
+      rows: prev.rows.filter((_, index) => index !== rowIndex)
+    }));
+    setActiveCell(null);
+    setContextMenu(prev => ({ ...prev, show: false }));
+  };
+
+  const deleteColumn = (colIndex: number) => {
+    if (tableData.rows[0]?.length <= 1) return; // Prevent deleting the last column
+    setTableData(prev => ({
+      rows: prev.rows.map(row => row.filter((_, index) => index !== colIndex))
+    }));
+    setActiveCell(null);
+    setContextMenu(prev => ({ ...prev, show: false }));
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenu(prev => ({ ...prev, show: false }));
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   return (
     <div className="table-editor">
       <div className="toolbar">
         <div className="toolbar-group">
-          <button className="toolbar-button" onClick={addRow} title="Add Row">
+          <button 
+            className="toolbar-button" 
+            onClick={() => addRow('after', tableData.rows.length - 1)} 
+            title="Add Row"
+          >
             <span className="material-icons">add_row_below</span>
           </button>
-          <button className="toolbar-button" onClick={addColumn} title="Add Column">
+          <button 
+            className="toolbar-button" 
+            onClick={() => addColumn('after', tableData.rows[0]?.length - 1)} 
+            title="Add Column"
+          >
             <span className="material-icons">add_column</span>
           </button>
         </div>
@@ -187,7 +289,8 @@ export const TableEditor: React.FC = () => {
         </div>
       </div>
 
-      <div className="table-container">
+      <div className="editor-layout">
+        <div className="table-container">
         <table className="sheet-table">
           <tbody>
             {tableData.rows.map((row, rowIndex) => (
@@ -197,8 +300,13 @@ export const TableEditor: React.FC = () => {
                     key={cellIndex}
                     className={`sheet-cell ${activeCell?.row === rowIndex && activeCell?.col === cellIndex ? 'active' : ''}`}
                     onClick={() => handleCellClick(rowIndex, cellIndex)}
+                    onContextMenu={(e) => handleContextMenu(e, rowIndex, cellIndex)}
                     colSpan={cell.colspan}
                     rowSpan={cell.rowspan}
+                    style={{
+                      backgroundColor: cell.backgroundColor || '#ffffff',
+                      color: cell.color || '#000000'
+                    }}
                   >
                     {activeCell?.row === rowIndex && activeCell?.col === cellIndex ? (
                       <input
@@ -261,7 +369,60 @@ export const TableEditor: React.FC = () => {
             ))}
           </tbody>
         </table>
+        </div>
+        
+        {activeCell && (
+          <div className="side-panel">
+            <div className="panel-section">
+              <h3>Cell Style</h3>
+              <div className="color-controls">
+                <div className="color-control">
+                  <label>Text Color</label>
+                  <input
+                    type="color"
+                    value={selectedColor}
+                    onChange={(e) => handleColorChange(e.target.value, 'text')}
+                  />
+                </div>
+                <div className="color-control">
+                  <label>Background</label>
+                  <input
+                    type="color"
+                    value={selectedBgColor}
+                    onChange={(e) => handleColorChange(e.target.value, 'background')}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="panel-section">
+              <h3>Table Operations</h3>
+              <div className="operation-buttons">
+                <button onClick={() => addRow('before', activeCell.row)}>Add Row Above</button>
+                <button onClick={() => addRow('after', activeCell.row)}>Add Row Below</button>
+                <button onClick={() => addColumn('before', activeCell.col)}>Add Column Left</button>
+                <button onClick={() => addColumn('after', activeCell.col)}>Add Column Right</button>
+                <button onClick={() => deleteRow(activeCell.row)} className="danger">Delete Row</button>
+                <button onClick={() => deleteColumn(activeCell.col)} className="danger">Delete Column</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {contextMenu.show && (
+        <div
+          className="context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <button onClick={() => addRow('before', contextMenu.row)}>Add Row Above</button>
+          <button onClick={() => addRow('after', contextMenu.row)}>Add Row Below</button>
+          <button onClick={() => addColumn('before', contextMenu.col)}>Add Column Left</button>
+          <button onClick={() => addColumn('after', contextMenu.col)}>Add Column Right</button>
+          <div className="context-menu-separator" />
+          <button onClick={() => deleteRow(contextMenu.row)} className="danger">Delete Row</button>
+          <button onClick={() => deleteColumn(contextMenu.col)} className="danger">Delete Column</button>
+        </div>
+      )}
 
       {showImport && (
         <div className="modal-overlay">

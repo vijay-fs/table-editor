@@ -7,6 +7,13 @@
   height: 100vh;
   background-color: #f8f9fa;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  overflow: hidden;
+}
+
+.editor-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
 }
 
 /* Toolbar Styles */
@@ -53,6 +60,124 @@
   overflow: auto;
   padding: 16px;
   background: #fff;
+  min-width: 0; /* Prevents flex item from overflowing */
+}
+
+.side-panel {
+  width: 280px;
+  background: #fff;
+  border-left: 1px solid #e0e0e0;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.panel-section {
+  margin-bottom: 24px;
+}
+
+.panel-section h3 {
+  margin: 0 0 16px;
+  color: #202124;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.color-controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.color-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.color-control label {
+  font-size: 12px;
+  color: #5f6368;
+}
+
+.color-control input[type="color"] {
+  width: 100px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.operation-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.operation-buttons button {
+  width: 100%;
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fff;
+  color: #202124;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.operation-buttons button:hover {
+  background: #f8f9fa;
+  border-color: #dadce0;
+}
+
+.operation-buttons button.danger {
+  color: #d93025;
+}
+
+.operation-buttons button.danger:hover {
+  background: #fce8e6;
+  border-color: #d93025;
+}
+
+.context-menu {
+  position: fixed;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  padding: 4px 0;
+  min-width: 180px;
+  z-index: 1000;
+}
+
+.context-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+  color: #202124;
+  cursor: pointer;
+}
+
+.context-menu button:hover {
+  background: #f8f9fa;
+}
+
+.context-menu button.danger {
+  color: #d93025;
+}
+
+.context-menu button.danger:hover {
+  background: #fce8e6;
+}
+
+.context-menu-separator {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 4px 0;
 }
 
 /* Table Styles */
@@ -70,8 +195,8 @@
   min-width: 100px;
   height: 32px;
   font-size: 14px;
-  color: #202124;
   transition: all 0.2s;
+  background-color: #ffffff;
 }
 
 .sheet-cell:hover {
@@ -92,6 +217,7 @@
   font-family: inherit;
   background: transparent;
   outline: none;
+  color: inherit;
 }
 
 .cell-content {
