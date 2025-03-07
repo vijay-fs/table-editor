@@ -16,6 +16,63 @@
   overflow: hidden;
 }
 
+/* Table Selector Styles */
+.table-selector {
+  display: flex;
+  background-color: #f1f3f4;
+  border-bottom: 1px solid #e0e0e0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.table-tab {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #f1f3f4;
+  border-right: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.table-tab.active {
+  background-color: #ffffff;
+  border-bottom: 2px solid #1a73e8;
+}
+
+.table-tab:hover {
+  background-color: #e8eaed;
+}
+
+.dirty-indicator {
+  color: #d93025;
+  margin-left: 4px;
+  font-weight: bold;
+}
+
+.save-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #5f6368;
+  margin-left: 8px;
+  padding: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.save-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #1a73e8;
+}
+
+.save-button .material-icons {
+  font-size: 16px;
+}
+
 /* Toolbar Styles */
 .toolbar {
   display: flex;
@@ -288,6 +345,34 @@
   font-family: monospace;
   margin-bottom: 16px;
   resize: vertical;
+}
+
+.import-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.import-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.import-name-field {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.import-name-field input {
+  padding: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 .modal-buttons {
