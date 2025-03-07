@@ -18,34 +18,6 @@ interface TableData {
   isDirty?: boolean;
 }
 
-const defaultTable = `<table>
-  <tr>
-    <td>TYPE</td>
-    <td colspan="8">SIDE-MOUNTED FLOAT SENSOR NOHKEN FM-11</td>
-  </tr>
-  <tr>
-    <td colspan="6">CUSTOMER</td>
-    <td>APPR.</td>
-    <td>CHECK</td>
-    <td>DRAWN</td>
-  </tr>
-  <tr>
-    <td>DATE</td>
-    <td>Mar. 03. 2017</td>
-    <td>SCALE</td>
-    <td>1:2</td>
-    <td>SIZE</td>
-    <td>A3</td>
-    <td>Y.I</td>
-    <td>S.A</td>
-    <td>J.M</td>
-  </tr>
-  <tr>
-    <td colspan="6">YASHIMA BUSSAN CO.,LTD</td>
-    <td colspan="3">DWG NO PLS-400-15b-00</td>
-  </tr>
-</table>`;
-
 interface ContextMenu {
   show: boolean;
   x: number;
@@ -59,11 +31,15 @@ export const TableEditor: React.FC = () => {
   const [activeTableIndex, setActiveTableIndex] = useState<number>(0);
   const [activeCell, setActiveCell] = useState<{ row: number; col: number } | null>(null);
   const [showImport, setShowImport] = useState(false);
-  const [inputHtml, setInputHtml] = useState(defaultTable);
+  const [inputHtml, setInputHtml] = useState('');
   const [contextMenu, setContextMenu] = useState<ContextMenu>({ show: false, x: 0, y: 0, row: 0, col: 0 });
-  const [selectedColor, setSelectedColor] = useState('#000000');
-  const [selectedBgColor, setSelectedBgColor] = useState('#ffffff');
   const editInputRef = useRef<HTMLInputElement>(null);
+
+  // useEffect(() => {
+  //   // Initialize with default table
+  //   const defaultTableData = parseHtmlTable(defaultTable, 'Table 1');
+  //   setTables([defaultTableData]);
+  // }, []);
 
   const parseHtmlTable = (html: string, tableName: string = 'Untitled Table') => {
     const cleanHtml = html.replace(/\\n/g, '\n');
@@ -80,6 +56,8 @@ export const TableEditor: React.FC = () => {
           content: td.textContent || '',
           colspan: td.getAttribute('colspan') ? parseInt(td.getAttribute('colspan')!) : undefined,
           rowspan: td.getAttribute('rowspan') ? parseInt(td.getAttribute('rowspan')!) : undefined,
+          backgroundColor: '#ffffff',
+          color: '#000000'
         });
       });
       rows.push(cells);
@@ -221,11 +199,13 @@ export const TableEditor: React.FC = () => {
   };
 
   const handleImport = () => {
+    if (!inputHtml.trim()) return;
     const tableName = `Table ${tables.length + 1}`;
     const parsed = parseHtmlTable(inputHtml, tableName);
     setTables(prev => [...prev, parsed]);
     setActiveTableIndex(tables.length);
     setShowImport(false);
+    setInputHtml('');
   };
 
   const handleExport = (tableIndex: number = activeTableIndex) => {
@@ -264,33 +244,6 @@ export const TableEditor: React.FC = () => {
     setTimeout(() => notification.remove(), 2000);
   };
 
-  const addNewTable = () => {
-    const newTableId = `table-${Date.now()}`;
-    const newTableName = `Table ${tables.length + 1}`;
-
-    setTables(prev => [
-      ...prev,
-      {
-        id: newTableId,
-        name: newTableName,
-        rows: [
-          [{ content: 'New Table', backgroundColor: '#ffffff', color: '#000000' }]
-        ],
-        isDirty: true
-      }
-    ]);
-
-    // Switch to the new table
-    setActiveTableIndex(tables.length);
-  };
-
-  useEffect(() => {
-    if (tables.length === 0) {
-      const parsed = parseHtmlTable(defaultTable, 'Table 1');
-      setTables([parsed]);
-    }
-  }, []);
-
   const handleContextMenu = (e: React.MouseEvent, rowIndex: number, cellIndex: number) => {
     e.preventDefault();
     setContextMenu({
@@ -302,39 +255,6 @@ export const TableEditor: React.FC = () => {
     });
   };
 
-  const handleColorChange = (color: string, type: 'text' | 'background') => {
-    if (!activeCell) return;
-
-    if (type === 'text') setSelectedColor(color);
-    else setSelectedBgColor(color);
-
-    setTables(prev => {
-      const updatedTables = [...prev];
-      if (!updatedTables[activeTableIndex]) return prev;
-
-      const currentTable = updatedTables[activeTableIndex];
-      const updatedRows = currentTable.rows.map((row, i) =>
-        i === activeCell.row
-          ? row.map((cell, j) =>
-            j === activeCell.col
-              ? {
-                ...cell,
-                ...(type === 'text' ? { color } : { backgroundColor: color })
-              }
-              : cell
-          )
-          : row
-      );
-
-      updatedTables[activeTableIndex] = {
-        ...currentTable,
-        rows: updatedRows,
-        isDirty: true
-      };
-
-      return updatedTables;
-    });
-  };
 
   const deleteRow = (rowIndex: number) => {
     setTables(prev => {
@@ -483,203 +403,135 @@ export const TableEditor: React.FC = () => {
   }, []);
 
   return (
-    <div className="table-editor">
-      <div className="toolbar">
-        <div className="toolbar-group">
-          <button className="toolbar-button" onClick={() => addRow()} title="Add Row">
-            <span className="material-icons">add_row_below</span>
-          </button>
-          <button className="toolbar-button" onClick={() => addColumn()} title="Add Column">
-            <span className="material-icons">add_column</span>
-          </button>
-        </div>
-        <div className="toolbar-group">
-          <button className="toolbar-button" onClick={() => setShowImport(true)} title="Import HTML">
-            <span className="material-icons">upload_file</span>
-          </button>
-          <button className="toolbar-button" onClick={() => handleExport()} title="Export HTML">
-            <span className="material-icons">download</span>
-          </button>
-          <button className="toolbar-button" onClick={() => addNewTable()} title="Add New Table">
-            <span className="material-icons">add_box</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="table-selector">
-        {tables.map((table, index) => (
-          <div
-            key={table.id}
-            className={`table-tab ${activeTableIndex === index ? 'active' : ''}`}
-            onClick={() => setActiveTableIndex(index)}
-          >
-            <span>{table.name}</span>
-            {table.isDirty && <span className="dirty-indicator">*</span>}
-            <button
-              className="save-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                saveTable(index);
-              }}
-              title="Save Table"
+    <div className="flex h-screen overflow-hidden">
+      {/* Left sidebar with table names */}
+      <div className="w-64 bg-gray-100 p-4 border-r border-gray-200 overflow-y-auto">
+        <h2 className="text-lg font-semibold mb-4">Tables</h2>
+        <div className="space-y-2">
+          {tables.map((table, index) => (
+            <div
+              key={table.id}
+              className={`p-2 rounded cursor-pointer ${index === activeTableIndex ? 'bg-blue-100' : 'hover:bg-gray-200'
+                }`}
+              onClick={() => setActiveTableIndex(index)}
             >
-              <span className="material-icons">save</span>
-            </button>
-          </div>
-        ))}
+              <span className="font-medium">{table.name}</span>
+              {table.isDirty && <span className="ml-2 text-red-500">*</span>}
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 space-y-2">
+          <button
+            className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={() => setShowImport(true)}
+          >
+            Import Table
+          </button>
+        </div>
       </div>
 
-      <div className="editor-layout">
-        {tables.length > 0 && tables[activeTableIndex] && (
-          <div className="table-container">
-            <table className="sheet-table">
-              <tbody>
-                {tables[activeTableIndex].rows.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {row.map((cell, cellIndex) => (
-                      <td
-                        key={cellIndex}
-                        className={`sheet-cell ${activeCell?.row === rowIndex && activeCell?.col === cellIndex ? 'active' : ''}`}
-                        onClick={() => handleCellClick(rowIndex, cellIndex)}
-                        onContextMenu={(e) => handleContextMenu(e, rowIndex, cellIndex)}
-                        colSpan={cell.colspan}
-                        rowSpan={cell.rowspan}
-                        style={{
-                          backgroundColor: cell.backgroundColor || '#ffffff',
-                          color: cell.color || '#000000'
-                        }}
-                      >
-                        {activeCell?.row === rowIndex && activeCell?.col === cellIndex ? (
-                          <input
-                            ref={editInputRef}
-                            type="text"
-                            value={cell.content}
-                            onChange={(e) => handleCellChange(rowIndex, cellIndex, e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, rowIndex, cellIndex)}
-                            onBlur={() => setActiveCell(null)}
-                            className="cell-input"
-                          />
-                        ) : (
-                          <span className="cell-content">{cell.content}</span>
-                        )}
-                        {activeCell?.row === rowIndex && activeCell?.col === cellIndex && (
-                          <div className="cell-controls">
-                            <input
-                              type="number"
-                              min="1"
-                              value={cell.colspan || 1}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || undefined;
-                                setTables(prev => {
-                                  const updatedTables = [...prev];
-                                  if (!updatedTables[activeTableIndex]) return prev;
+      {/* Main content area */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full flex flex-col">
+          {/* Table toolbar */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center space-x-4">
+              <button
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                onClick={() => handleExport()}
+              >
+                Export HTML
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={() => saveTable()}
+              >
+                Save
+              </button>
+            </div>
+          </div>
 
-                                  const currentTable = updatedTables[activeTableIndex];
-                                  const updatedRows = currentTable.rows.map((r, i) =>
-                                    i === rowIndex
-                                      ? r.map((c, j) =>
-                                        j === cellIndex ? { ...c, colspan: value } : c
-                                      )
-                                      : r
-                                  );
-
-                                  updatedTables[activeTableIndex] = {
-                                    ...currentTable,
-                                    rows: updatedRows,
-                                    isDirty: true
-                                  };
-
-                                  return updatedTables;
-                                });
-                              }}
-                              className="span-input"
-                              title="Colspan"
-                            />
-                            <input
-                              type="number"
-                              min="1"
-                              value={cell.rowspan || 1}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || undefined;
-                                setTables(prev => {
-                                  const updatedTables = [...prev];
-                                  if (!updatedTables[activeTableIndex]) return prev;
-
-                                  const currentTable = updatedTables[activeTableIndex];
-                                  const updatedRows = currentTable.rows.map((r, i) =>
-                                    i === rowIndex
-                                      ? r.map((c, j) =>
-                                        j === cellIndex ? { ...c, rowspan: value } : c
-                                      )
-                                      : r
-                                  );
-
-                                  updatedTables[activeTableIndex] = {
-                                    ...currentTable,
-                                    rows: updatedRows,
-                                    isDirty: true
-                                  };
-
-                                  return updatedTables;
-                                });
-                              }}
-                              className="span-input"
-                              title="Rowspan"
-                            />
-                          </div>
-                        )}
-                      </td>
+          {/* Table preview/edit area */}
+          <div className="flex-1 overflow-auto p-4">
+            {tables[activeTableIndex] && (
+              <div className="table-container">
+                <table className="border-collapse">
+                  <tbody>
+                    {tables[activeTableIndex].rows.map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {row.map((cell, cellIndex) => (
+                          <td
+                            key={`${rowIndex}-${cellIndex}`}
+                            colSpan={cell.colspan}
+                            rowSpan={cell.rowspan}
+                            className={`border border-gray-300 p-2 ${activeCell?.row === rowIndex && activeCell?.col === cellIndex
+                              ? 'bg-blue-50'
+                              : ''
+                              }`}
+                            style={{
+                              backgroundColor: cell.backgroundColor,
+                              color: cell.color,
+                              position: 'relative',
+                              minWidth: '100px'
+                            }}
+                            onClick={() => handleCellClick(rowIndex, cellIndex)}
+                            onContextMenu={(e) => handleContextMenu(e, rowIndex, cellIndex)}
+                          >
+                            {activeCell?.row === rowIndex && activeCell?.col === cellIndex ? (
+                              <input
+                                ref={editInputRef}
+                                type="text"
+                                value={cell.content}
+                                onChange={(e) => handleCellChange(rowIndex, cellIndex, e.target.value)}
+                                onKeyDown={(e) => handleKeyDown(e, rowIndex, cellIndex)}
+                                className="w-full h-full border-none bg-transparent outline-none"
+                                autoFocus
+                              />
+                            ) : (
+                              cell.content
+                            )}
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
-
-        {activeCell && (
-          <div className="side-panel">
-            <div className="panel-section">
-              <h3>Cell Style</h3>
-              <div className="color-controls">
-                <div className="color-control">
-                  <label>Text Color</label>
-                  <input
-                    type="color"
-                    value={selectedColor}
-                    onChange={(e) => handleColorChange(e.target.value, 'text')}
-                  />
-                </div>
-                <div className="color-control">
-                  <label>Background</label>
-                  <input
-                    type="color"
-                    value={selectedBgColor}
-                    onChange={(e) => handleColorChange(e.target.value, 'background')}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="panel-section">
-              <h3>Table Operations</h3>
-              <div className="operation-buttons">
-                <button onClick={() => addRow('before', activeCell.row)}>Add Row Above</button>
-                <button onClick={() => addRow('after', activeCell.row)}>Add Row Below</button>
-                <button onClick={() => addColumn('before', activeCell.col)}>Add Column Left</button>
-                <button onClick={() => addColumn('after', activeCell.col)}>Add Column Right</button>
-                <button onClick={() => deleteRow(activeCell.row)} className="danger">Delete Row</button>
-                <button onClick={() => deleteColumn(activeCell.col)} className="danger">Delete Column</button>
-              </div>
-              <div className="operation-buttons">
-                <button onClick={() => addCellRight(activeCell.row, activeCell.col)}>Add Cell Right</button>
-                <button onClick={() => addCellLeft(activeCell.row, activeCell.col)}>Add Cell Left</button>
-                <button onClick={() => addCellBelow(activeCell.row, activeCell.col)}>Add Cell Below</button>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
+      {/* Import modal */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg w-[600px]">
+            <h2 className="text-xl font-semibold mb-4">Import Table HTML</h2>
+            <textarea
+              className="w-full h-48 p-2 border rounded mb-4"
+              value={inputHtml}
+              onChange={(e) => setInputHtml(e.target.value)}
+              placeholder="Paste table HTML here..."
+            />
+            <div className="flex justify-end space-x-4">
+              <button
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                onClick={() => setShowImport(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={handleImport}
+              >
+                Import
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Context menu */}
       {contextMenu.show && (
         <div
           className="context-menu"
@@ -699,22 +551,7 @@ export const TableEditor: React.FC = () => {
         </div>
       )}
 
-      {showImport && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>Import HTML Table</h2>
-            <textarea
-              value={inputHtml}
-              onChange={(e) => setInputHtml(e.target.value)}
-              placeholder="Paste your HTML table here..."
-            />
-            <div className="modal-buttons">
-              <button onClick={() => setShowImport(false)}>Cancel</button>
-              <button onClick={handleImport}>Import</button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
